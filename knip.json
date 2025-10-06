@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": ["app/**/*.{js,ts,jsx,tsx}", "app/api/**/*.ts"],
+  "project": [
+    "app/**/*.{js,ts,jsx,tsx}",
+    "lib/**/*.{js,ts,jsx,tsx}",
+    "components/**/*.{js,ts,jsx,tsx}"
+  ],
+  "ignore": ["next-env.d.ts"],
+  "ignoreDependencies": []
+}
