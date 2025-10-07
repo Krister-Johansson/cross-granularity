@@ -36,7 +36,6 @@ export async function fetchTimeSeries(params: {
   endDate: string;
   resolution: DateTimeUnit;
 }): Promise<TimeSeriesResponse['data']> {
-  // Align dates to complete buckets using startOf and endOf
   const alignedParams = {
     startDate: DateTime.fromISO(params.startDate)
       .startOf(params.resolution)
@@ -62,6 +61,6 @@ export function useTimeSeriesQuery(params: {
     queryKey: ['time-series', params],
     queryFn: () => fetchTimeSeries(params),
     placeholderData: keepPreviousData,
-    enabled: !!(params.startDate && params.endDate), // Only run query when dates are available
+    enabled: !!(params.startDate && params.endDate),
   });
 }
