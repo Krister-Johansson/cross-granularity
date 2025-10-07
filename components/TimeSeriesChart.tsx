@@ -15,8 +15,9 @@ import {
 } from '@/components/ui/empty';
 import { useTimeSeriesQuery } from '@/lib/timeSeries';
 import { useTimeSeriesContext } from '@/lib/timeSeriesContext';
+import { formatTimestampForDisplay } from '@/lib/utils';
 import { ChartNoAxesCombined, Loader2, TriangleAlert } from 'lucide-react';
-import { DateTime, DateTimeUnit } from 'luxon';
+import { DateTime } from 'luxon';
 import { useMemo } from 'react';
 import {
   Area,
@@ -26,26 +27,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-
-const formatTimestampForDisplay = (
-  timestamp: DateTime,
-  resolution: DateTimeUnit
-): string => {
-  switch (resolution) {
-    case 'hour':
-      return timestamp.toFormat('MMM dd HH:mm');
-    case 'day':
-      return timestamp.toFormat('MMM dd');
-    case 'week':
-      return timestamp.toFormat('MMM dd');
-    case 'month':
-      return timestamp.toFormat('MMM yyyy');
-    case 'year':
-      return timestamp.toFormat('yyyy');
-    default:
-      return timestamp.toFormat('MMM dd');
-  }
-};
 
 export default function TimeSeriesChart() {
   const { state } = useTimeSeriesContext();
@@ -61,31 +42,32 @@ export default function TimeSeriesChart() {
       (data?.buckets ?? []).map(bucket => ({
         timestamp: bucket.timestamp,
         value: bucket.value,
-        label: bucket.label,
-
-        displayTime: formatTimestampForDisplay(
-          DateTime.fromISO(bucket.timestamp),
-          resolution
-        ),
-
-        date: DateTime.fromISO(bucket.timestamp).toFormat('MMM dd, yyyy'),
       })),
-    [data?.buckets, resolution]
+    [data?.buckets]
   );
-
   const todayPosition = useMemo(() => {
-    const now = DateTime.now();
+    const actualNow = DateTime.now();
     const chartStart = DateTime.fromISO(startDate);
     const chartEnd = DateTime.fromISO(endDate);
 
-    if (now < chartStart || now > chartEnd) {
+    // Check if today is within the chart range using actual time
+    if (actualNow < chartStart || actualNow > chartEnd) {
       return null;
     }
 
-    const todayDisplayTime = formatTimestampForDisplay(now, resolution);
+    // Align to bucket start for matching
+    const bucketAlignedNow = actualNow.startOf(resolution);
+    const alignedMillis = bucketAlignedNow.toMillis();
 
-    return todayDisplayTime;
-  }, [startDate, endDate, resolution]);
+    // Find the index of the bucket that matches by comparing milliseconds
+    const matchingIndex = chartData.findIndex(bucket => {
+      const bucketMillis = DateTime.fromISO(bucket.timestamp).toMillis();
+      return bucketMillis === alignedMillis;
+    });
+
+    // Return the index if found
+    return matchingIndex >= 0 ? matchingIndex : null;
+  }, [startDate, endDate, resolution, chartData]);
 
   if (isLoading) {
     return (
@@ -174,16 +156,22 @@ export default function TimeSeriesChart() {
               <AreaChart data={chartData} accessibilityLayer>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis
-                  dataKey="displayTime"
+                  dataKey="timestamp"
                   tick={{ fontSize: 12 }}
                   angle={-45}
                   textAnchor="end"
                   height={80}
+                  tickFormatter={timestamp =>
+                    formatTimestampForDisplay(
+                      DateTime.fromISO(timestamp),
+                      resolution
+                    )
+                  }
                 />
                 <YAxis tick={{ fontSize: 12 }} />
-                {todayPosition && (
+                {todayPosition !== null && chartData[todayPosition] && (
                   <ReferenceLine
-                    x={todayPosition}
+                    x={chartData[todayPosition].timestamp}
                     stroke="red"
                     strokeWidth={2}
                     strokeDasharray="5 5"
@@ -195,7 +183,9 @@ export default function TimeSeriesChart() {
                     <ChartTooltipContent
                       labelFormatter={(value, payload) => {
                         if (payload && payload[0] && payload[0].payload) {
-                          return payload[0].payload.date;
+                          const timestamp = payload[0].payload.timestamp;
+                          const dt = DateTime.fromISO(timestamp);
+                          return formatTimestampForDisplay(dt, resolution);
                         }
                         return value;
                       }}
