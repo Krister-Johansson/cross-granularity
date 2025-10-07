@@ -1,7 +1,7 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Allow eval in development for hot reloading and turbopack
+  devIndicators: false,
   async headers() {
     return [
       {
