@@ -1,6 +1,6 @@
 'use client';
 
-import * as React from 'react';
+import { useState } from 'react';
 import { DateTime } from 'luxon';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
@@ -20,11 +20,20 @@ interface CustomRangePickerProps {
 }
 
 export function CustomRangePicker({ className }: CustomRangePickerProps) {
-  const [date, setDate] = React.useState<DateRange | undefined>();
-  const [isOpen, setIsOpen] = React.useState(false);
   const { state, setParams, computeRangeFromCustom, timezone } =
     useTimeSeriesContext();
-  const { selectedPreset } = state;
+  const { selectedPreset, from, to } = state;
+
+  const [date, setDate] = useState<DateRange | undefined>(() => {
+    if (selectedPreset === 'custom' && from && to) {
+      return {
+        from: DateTime.fromISO(from).toJSDate(),
+        to: DateTime.fromISO(to).toJSDate(),
+      };
+    }
+    return undefined;
+  });
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleApplyCustom = (fromISO: string, toISO: string) => {
     const span = DateTime.fromISO(toISO).diff(DateTime.fromISO(fromISO));
