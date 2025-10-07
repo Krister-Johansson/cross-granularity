@@ -5,12 +5,14 @@ A Next.js application for viewing time series data with dynamic resolution and d
 ## Features
 
 - **Multiple Time Presets**: Quick access to 1 week, 1 month, 3 months, 6 months, and 1 year views
-- **Custom Date Range**: Pick any arbitrary date range with a calendar picker
-- **Dynamic Resolution**: Switch between hour, day, week, month, and year granularities
+- **Custom Date Range**: Pick any arbitrary date range with a calendar picker featuring week numbers and Monday start
+- **Dynamic Resolution**: Switch between hour, day, week, month, and year granularities (auto-sorted)
 - **Smart Navigation**: Prev/Next buttons that maintain context and move by the appropriate time span
 - **Today Button**: Instantly return to the current time period
+- **"Now" Indicator**: Visual red line showing the current time position on the chart
 - **URL State Management**: All settings persist in the URL for easy sharing and bookmarking
-- **Empty States**: Beautiful UI feedback when no data is available
+- **Loading & Empty States**: Beautiful UI feedback using shadcn Empty component with animated loaders
+- **Timezone Aware**: Consistent timezone handling across all date operations
 
 ## Getting Started
 
@@ -68,6 +70,7 @@ interface TimeSeriesState {
 - **`setParams(params)`**: Single function to update any combination of state values atomically
 - **`computeRangeFromPreset(presetKey, endAnchorISO, resolution, tz)`**: Calculates startDate/endDate from preset configuration
 - **`computeRangeFromCustom(fromISO, toISO, resolution, tz)`**: Calculates startDate/endDate from custom range
+- **`formatTimestampForDisplay(timestamp, resolution)`**: Formats timestamps for chart display based on resolution (in `lib/utils.ts`)
 
 ### Helper Functions
 
@@ -267,6 +270,10 @@ All state is synced to URL parameters, making the app shareable and bookmarkable
 ### 6. **Atomic State Updates**
 
 The single `setParams()` function prevents race conditions from multiple sequential setState calls.
+
+### 7. **Timestamp-Based Chart Data**
+
+Chart data uses ISO timestamps as the unique identifier, with formatting applied on-demand via `tickFormatter` and `labelFormatter`. This eliminates duplicate display value issues when the same formatted date appears multiple times (e.g., "Oct 06" in both 2025 and 2026).
 
 ## Tech Stack
 
