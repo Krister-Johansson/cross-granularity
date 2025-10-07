@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useTimeSeriesContext } from '@/lib/timeSeriesContext';
 import { presetConfig } from '@/lib/presets';
+import { ButtonGroup } from '@/components/ui/button-group';
 
 export default function TimeNavigationControls() {
   const {
@@ -18,44 +19,91 @@ export default function TimeNavigationControls() {
     setParams,
     availableResolutions,
     computeRangeFromPreset,
+    computeRangeFromCustom,
     timezone,
   } = useTimeSeriesContext();
-  const { resolution, selectedPreset, endAnchor } = state;
+  const { resolution, selectedPreset, endAnchor, from, to } = state;
 
-  const stepAnchorByPreset = (direction: 'minus' | 'plus') => {
+  const stepCustomWindow = (direction: 'minus' | 'plus') => {
+    if (!from || !to) return;
+
+    const tz = timezone;
+    const fromDT = DateTime.fromISO(from, { zone: tz });
+    const toDT = DateTime.fromISO(to, { zone: tz });
+    const span = toDT.diff(fromDT);
+
+    const shift = direction === 'plus' ? span : span.negate();
+
+    const nextFrom = fromDT.plus(shift).toISO()!;
+    const nextTo = toDT.plus(shift).toISO()!;
+    const nextEndAnchor = nextTo;
+
+    const { startDate, endDate } = computeRangeFromCustom(
+      nextFrom,
+      nextTo,
+      resolution,
+      tz
+    );
+
+    setParams({
+      from: nextFrom,
+      to: nextTo,
+      endAnchor: nextEndAnchor,
+      startDate,
+      endDate,
+    });
+  };
+
+  const stepPresetWindow = (direction: 'minus' | 'plus') => {
     if (!selectedPreset) return;
-    const dur = presetConfig[selectedPreset].duration; // calendar-aware
+    const dur = presetConfig[selectedPreset].duration;
     const anchor = DateTime.fromISO(endAnchor, { zone: timezone });
-    const next = direction === 'plus' ? anchor.plus(dur) : anchor.minus(dur);
-    return next.toISO()!;
+    const nextEndAnchor = (
+      direction === 'plus' ? anchor.plus(dur) : anchor.minus(dur)
+    ).toISO()!;
+    const { startDate, endDate } = computeRangeFromPreset(
+      selectedPreset,
+      nextEndAnchor,
+      resolution,
+      timezone
+    );
+    setParams({ endAnchor: nextEndAnchor, startDate, endDate });
   };
 
   const handlePrev = () => {
-    if (!selectedPreset) return;
-    const nextEndAnchor = stepAnchorByPreset('minus')!;
-    const { startDate, endDate } = computeRangeFromPreset(
-      selectedPreset,
-      nextEndAnchor,
-      resolution,
-      timezone
-    );
-    setParams({ startDate, endDate, endAnchor: nextEndAnchor });
+    if (selectedPreset === 'custom') stepCustomWindow('minus');
+    else stepPresetWindow('minus');
   };
 
   const handleNext = () => {
-    if (!selectedPreset) return;
-    const nextEndAnchor = stepAnchorByPreset('plus')!;
-    const { startDate, endDate } = computeRangeFromPreset(
-      selectedPreset,
-      nextEndAnchor,
-      resolution,
-      timezone
-    );
-    setParams({ startDate, endDate, endAnchor: nextEndAnchor });
+    if (selectedPreset === 'custom') stepCustomWindow('plus');
+    else stepPresetWindow('plus');
   };
 
   const handleToday = () => {
     const nowISO = DateTime.now().setZone(timezone).toISO()!;
+
+    if (selectedPreset === 'custom' && from && to) {
+      const span = DateTime.fromISO(to).diff(DateTime.fromISO(from));
+      const newTo = DateTime.fromISO(nowISO).toISO()!;
+      const newFrom = DateTime.fromISO(nowISO).minus(span).toISO()!;
+      const { startDate, endDate } = computeRangeFromCustom(
+        newFrom,
+        newTo,
+        resolution,
+        timezone
+      );
+      setParams({
+        selectedPreset: 'custom',
+        from: newFrom,
+        to: newTo,
+        endAnchor: newTo,
+        startDate,
+        endDate,
+      });
+      return;
+    }
+
     const presetKey = selectedPreset ?? '1w';
     const { startDate, endDate } = computeRangeFromPreset(
       presetKey,
@@ -72,7 +120,15 @@ export default function TimeNavigationControls() {
   };
 
   const handleResolutionChange = (newResolution: DateTimeUnit) => {
-    if (selectedPreset) {
+    if (selectedPreset === 'custom' && from && to) {
+      const { startDate, endDate } = computeRangeFromCustom(
+        from,
+        to,
+        newResolution,
+        timezone
+      );
+      setParams({ startDate, endDate, resolution: newResolution });
+    } else if (selectedPreset) {
       const { startDate, endDate } = computeRangeFromPreset(
         selectedPreset,
         endAnchor,
@@ -102,30 +158,25 @@ export default function TimeNavigationControls() {
         </Select>
       </div>
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handlePrev}
-          className="h-8 w-8 p-0"
-        >
-          ←
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleToday}
-          className="h-8 px-3"
-        >
-          Today
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleNext}
-          className="h-8 w-8 p-0"
-        >
-          →
-        </Button>
+        <ButtonGroup>
+          <Button
+            variant="outline"
+            onClick={handlePrev}
+            className="h-8 w-8 p-0"
+          >
+            ←
+          </Button>
+          <Button variant="outline" onClick={handleToday} className="h-8 px-3">
+            Today
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleNext}
+            className="h-8 w-8 p-0"
+          >
+            →
+          </Button>
+        </ButtonGroup>
       </div>
     </div>
   );
