@@ -1,6 +1,5 @@
 'use client';
 
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   ChartContainer,
   ChartTooltip,
@@ -16,7 +15,7 @@ import {
 } from '@/components/ui/empty';
 import { useTimeSeriesQuery } from '@/lib/timeSeries';
 import { useTimeSeriesContext } from '@/lib/timeSeriesContext';
-import { AlertCircle, ChartNoAxesCombined, Loader2 } from 'lucide-react';
+import { ChartNoAxesCombined, Loader2, TriangleAlert } from 'lucide-react';
 import { DateTime, DateTimeUnit } from 'luxon';
 import { useMemo } from 'react';
 import {
@@ -109,12 +108,19 @@ export default function TimeSeriesChart() {
   if (error) {
     return (
       <div className="w-full h-full flex items-center justify-center">
-        <Alert variant="destructive" className="max-w-md">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {error instanceof Error ? error.message : 'Unknown error occurred'}
-          </AlertDescription>
-        </Alert>
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <TriangleAlert className="h-12 w-12 text-destructive" />
+            </EmptyMedia>
+          </EmptyHeader>
+          <EmptyTitle>Failed to load data</EmptyTitle>
+          <EmptyDescription>
+            {error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred while fetching time series data.'}
+          </EmptyDescription>
+        </Empty>
       </div>
     );
   }
