@@ -22,7 +22,6 @@ import {
   YAxis,
 } from 'recharts';
 
-// Common function to format timestamps for display based on resolution
 const formatTimestampForDisplay = (
   timestamp: DateTime,
   resolution: DateTimeUnit
@@ -52,37 +51,32 @@ export default function TimeSeriesChart() {
     resolution,
   });
 
-  // Hooks must be called unconditionally before any early returns.
   const chartData = useMemo(
     () =>
       (data?.buckets ?? []).map(bucket => ({
         timestamp: bucket.timestamp,
         value: bucket.value,
         label: bucket.label,
-        // Format the timestamp for display
+
         displayTime: formatTimestampForDisplay(
           DateTime.fromISO(bucket.timestamp),
           resolution
         ),
-        // Add formatted date for tooltip
+
         date: DateTime.fromISO(bucket.timestamp).toFormat('MMM dd, yyyy'),
       })),
     [data?.buckets, resolution]
   );
 
-  // Calculate today's position for the reference line
   const todayPosition = useMemo(() => {
     const now = DateTime.now();
     const chartStart = DateTime.fromISO(startDate);
     const chartEnd = DateTime.fromISO(endDate);
 
-    // Only show today line if "now" is within the chart's time range
     if (now < chartStart || now > chartEnd) {
       return null;
     }
 
-    // Convert DateTime.now() to the same format as chart data (displayTime)
-    // This lets the chart's bucket logic handle the positioning automatically
     const todayDisplayTime = formatTimestampForDisplay(now, resolution);
 
     return todayDisplayTime;
@@ -129,7 +123,6 @@ export default function TimeSeriesChart() {
     );
   }
 
-  // Chart config (keys map to data keys)
   const chartConfig: ChartConfig = {
     value: {
       label: 'Inventory Level',
@@ -143,7 +136,6 @@ export default function TimeSeriesChart() {
     <div className="flex-1 p-4">
       <div className="h-full">
         <div className="w-full h-full flex flex-col">
-          {/* Chart Header */}
           <div className="mb-4 text-sm text-muted-foreground">
             Resolution:{' '}
             <span className="font-medium capitalize">{resolution}</span> | Total
@@ -153,7 +145,6 @@ export default function TimeSeriesChart() {
             </span>
           </div>
 
-          {/* Chart Container */}
           <div className="flex-1">
             <ChartContainer
               config={chartConfig}
