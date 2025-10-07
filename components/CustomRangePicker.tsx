@@ -103,6 +103,8 @@ export function CustomRangePicker({ className }: CustomRangePickerProps) {
           selected={date}
           onSelect={setDate}
           numberOfMonths={2}
+          weekStartsOn={1}
+          showWeekNumber
         />
         <div className="flex justify-end p-3 border-t">
           <Button onClick={handleApply} disabled={!date?.from || !date?.to}>
