@@ -1,65 +1,64 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { ButtonGroup } from '@/components/ui/button-group';
 import { getDefaultResolution, presetConfig } from '@/lib/presets';
 import { useTimeSeriesContext } from '@/lib/timeSeriesContext';
-import { DateTime } from 'luxon';
+import { CustomRangePicker } from './CustomRangePicker';
 
 export default function PresetButtons() {
   const { state, setParams, computeRangeFromPreset, timezone } =
     useTimeSeriesContext();
   const { selectedPreset } = state;
 
-  const handlePresetSelect = (presetKey: string) => {
-    const preset = presetConfig[presetKey];
+  const handlePresetSelect = (selectedPreset: string) => {
+    const preset = presetConfig[selectedPreset];
     if (preset) {
-      const now = DateTime.now().setZone(timezone).toISO()!;
-      const defaultResolution = getDefaultResolution(presetKey);
-      const { startDate: newStartDate, endDate: newEndDate } =
-        computeRangeFromPreset(presetKey, now, defaultResolution, timezone);
-
+      const resolution = getDefaultResolution(selectedPreset);
+      const { endDate } = preset.getPreset();
+      const endAnchor = endDate;
+      const snapped = computeRangeFromPreset(
+        selectedPreset,
+        endAnchor,
+        resolution,
+        timezone
+      );
       setParams({
-        startDate: newStartDate,
-        endDate: newEndDate,
-        selectedPreset: presetKey,
-        resolution: defaultResolution,
-        endAnchor: now,
+        startDate: snapped.startDate,
+        endDate: snapped.endDate,
+        selectedPreset,
+        resolution,
+        endAnchor,
       });
     }
   };
 
   return (
     <div className="flex items-center gap-6">
-      {Object.entries(presetConfig).map(([key, preset]) => (
-        <Button
-          key={key}
-          variant={selectedPreset === key ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => handlePresetSelect(key)}
-          className={`flex flex-col items-center gap-1 h-auto py-2 px-3 transition-all ${
-            selectedPreset === key
-              ? 'bg-primary text-primary-foreground shadow-md border-primary'
-              : 'hover:bg-muted/50'
-          }`}
-        >
-          <span
-            className={`text-sm font-medium ${
-              selectedPreset === key ? 'text-primary-foreground' : ''
-            }`}
-          >
-            {preset.label}
-          </span>
-          <span
-            className={`text-xs ${
+      <ButtonGroup>
+        {Object.entries(presetConfig).map(([key, preset]) => (
+          <Button
+            key={key}
+            variant={selectedPreset === key ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handlePresetSelect(key)}
+            className={`flex flex-col items-center gap-1 h-auto py-2 px-3 transition-all ${
               selectedPreset === key
-                ? 'text-primary-foreground/80'
-                : 'opacity-70'
+                ? 'bg-primary text-primary-foreground shadow-md border-primary'
+                : 'hover:bg-muted/50'
             }`}
           >
-            {preset.description}
-          </span>
-        </Button>
-      ))}
+            <span
+              className={`text-sm font-medium ${
+                selectedPreset === key ? 'text-primary-foreground' : ''
+              }`}
+            >
+              {preset.label}
+            </span>
+          </Button>
+        ))}
+      </ButtonGroup>
+      <CustomRangePicker className="h-auto py-2 px-3" />
     </div>
   );
 }
