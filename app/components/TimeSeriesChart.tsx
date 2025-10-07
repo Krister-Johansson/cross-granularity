@@ -7,10 +7,17 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart';
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTimeSeriesQuery } from '@/lib/timeSeries';
 import { useTimeSeriesContext } from '@/lib/timeSeriesContext';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, ChartNoAxesCombined } from 'lucide-react';
 import { DateTime, DateTimeUnit } from 'luxon';
 import { useMemo } from 'react';
 import {
@@ -110,15 +117,21 @@ export default function TimeSeriesChart() {
     );
   }
 
-  if (!data) {
+  if (!data || chartData.length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center">
-        <Alert className="max-w-md">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            No data available for the selected time range.
-          </AlertDescription>
-        </Alert>
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <ChartNoAxesCombined className="h-12 w-12" />
+            </EmptyMedia>
+          </EmptyHeader>
+          <EmptyTitle>No data available</EmptyTitle>
+          <EmptyDescription>
+            No time series data found for the selected date range. Try adjusting
+            your date range or selecting a different preset.
+          </EmptyDescription>
+        </Empty>
       </div>
     );
   }
@@ -178,22 +191,11 @@ export default function TimeSeriesChart() {
                         }
                         return value;
                       }}
-                      formatter={(value, name) => [
-                        value?.toLocaleString(),
-                        chartConfig[name as keyof typeof chartConfig]?.label ||
-                          name,
-                      ]}
+                      formatter={value => [value?.toLocaleString()]}
                     />
                   }
                 />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke="var(--color-value)"
-                  fill="var(--color-value)"
-                  fillOpacity={0.3}
-                  strokeWidth={2}
-                />
+                <Area dataKey="value" />
               </AreaChart>
             </ChartContainer>
           </div>
