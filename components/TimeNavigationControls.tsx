@@ -13,6 +13,14 @@ import { useTimeSeriesContext } from '@/lib/timeSeriesContext';
 import { presetConfig } from '@/lib/presets';
 import { ButtonGroup } from '@/components/ui/button-group';
 
+const RESOLUTION_ORDER: DateTimeUnit[] = [
+  'hour',
+  'day',
+  'week',
+  'month',
+  'year',
+];
+
 export default function TimeNavigationControls() {
   const {
     state,
@@ -23,6 +31,10 @@ export default function TimeNavigationControls() {
     timezone,
   } = useTimeSeriesContext();
   const { resolution, selectedPreset, endAnchor, from, to } = state;
+
+  const sortedResolutions = [...availableResolutions].sort(
+    (a, b) => RESOLUTION_ORDER.indexOf(a) - RESOLUTION_ORDER.indexOf(b)
+  );
 
   const stepCustomWindow = (direction: 'minus' | 'plus') => {
     if (!from || !to) return;
@@ -149,7 +161,7 @@ export default function TimeNavigationControls() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {availableResolutions.map(res => (
+            {sortedResolutions.map(res => (
               <SelectItem key={res} value={res}>
                 {res.charAt(0).toUpperCase() + res.slice(1)}
               </SelectItem>
